@@ -21,12 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sabadac.btchack.R
 
 @Preview(showSystemUi = true)
 @Composable
@@ -43,21 +45,21 @@ fun GameScreen(
             .wrapContentSize(),
     ) {
         AddressField(
-            label = "Private Key Hex",
+            label = stringResource(R.string.private_key_hex),
             address = gameUiState.index.toString(16)
         )
         AddressField(
-            label = "Bip44",
+            label = stringResource(R.string.bip44),
             address = gameUiState.bip44BtcAddress
         )
 
         AddressField(
-            label = "Bip84",
+            label = stringResource(R.string.bip84),
             address = gameUiState.bip84BtcAddress
         )
 
         AddressField(
-            label = "ETH",
+            label = stringResource(R.string.eth),
             address = gameUiState.ethAddress
         )
 
@@ -68,7 +70,7 @@ fun GameScreen(
                 gameViewModel.start()
             }
         }, modifier = Modifier.padding(16.dp)) {
-            Text(text = if (gameUiState.isSpinning) "stop" else "start")
+            Text(text = stringResource(if (gameUiState.isSpinning) R.string.pause else R.string.continue_spin))
         }
     }
 }

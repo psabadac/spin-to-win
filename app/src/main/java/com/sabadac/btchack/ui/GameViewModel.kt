@@ -17,7 +17,6 @@ import org.bitcoinj.script.Script
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
 import java.math.BigInteger
-import kotlin.system.measureTimeMillis
 
 class GameViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(
@@ -52,6 +51,7 @@ class GameViewModel : ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(isSpinning = true)
         }
+
         viewModelScope.launch(Dispatchers.IO) {
             spin().collect { cryptoAddress ->
                 updateAddresses(cryptoAddress)
@@ -83,24 +83,22 @@ class GameViewModel : ViewModel() {
     @OptIn(ExperimentalStdlibApi::class)
     private fun spin() : Flow<CryptoAddress> = flow {
         var i = uiState.value.index
-        val duration = measureTimeMillis {
-            while (uiState.value.isSpinning) {
-                val privateKey = i
-                emit(CryptoAddress(i.toString(), AddressType.PrivateKey))
 
-                val bip44BtcAddress = privateKeyToLegacyBip44BtcAddress(privateKey)
-                emit(CryptoAddress(bip44BtcAddress, AddressType.Bip44))
+        while (uiState.value.isSpinning) {
+            val privateKey = i
+            emit(CryptoAddress(i.toString(), AddressType.PrivateKey))
 
-                val bip84BtcAddress = privateKeyToNativeSegWitBip84BtcAddress(privateKey)
-                emit(CryptoAddress(bip84BtcAddress, AddressType.Bip84))
+            val bip44BtcAddress = privateKeyToLegacyBip44BtcAddress(privateKey)
+            emit(CryptoAddress(bip44BtcAddress, AddressType.Bip44))
 
-                val ethAddress = privateKeyToEthAddress(privateKey)
-                emit(CryptoAddress(ethAddress, AddressType.Eth))
-                i = i.plus(BigInteger.ONE)
-            }
+            val bip84BtcAddress = privateKeyToNativeSegWitBip84BtcAddress(privateKey)
+            emit(CryptoAddress(bip84BtcAddress, AddressType.Bip84))
+
+            val ethAddress = privateKeyToEthAddress(privateKey)
+            emit(CryptoAddress(ethAddress, AddressType.Eth))
+            i = i.plus(BigInteger.ONE)
         }
-        println("pulamea + ${duration/1000.0}")
-        println(i)
+
         stop()
     }
 
