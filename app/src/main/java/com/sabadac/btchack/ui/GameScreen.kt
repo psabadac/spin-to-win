@@ -3,8 +3,8 @@ package com.sabadac.btchack.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,23 +46,29 @@ fun GameScreen(
             .wrapContentSize(),
     ) {
         AddressField(
-            label = stringResource(R.string.private_key_hex),
-            address = gameUiState.index.toString(16)
-        )
+            address = CryptoAddress(
+                gameUiState.index.toString(16),
+                AddressType.PrivateKey,
+                true
+            )
+        ) {}
         AddressField(
-            label = stringResource(R.string.bip44),
-            address = gameUiState.bip44BtcAddress
-        )
+            address = gameUiState.bip44BtcAddress,
+        ) {
+            gameViewModel.updateCheck(it)
+        }
 
         AddressField(
-            label = stringResource(R.string.bip84),
             address = gameUiState.bip84BtcAddress
-        )
+        ) {
+            gameViewModel.updateCheck(it)
+        }
 
         AddressField(
-            label = stringResource(R.string.eth),
             address = gameUiState.ethAddress
-        )
+        ) {
+            gameViewModel.updateCheck(it)
+        }
 
         Button(onClick = {
             if (gameUiState.isSpinning) {
@@ -78,29 +85,44 @@ fun GameScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddressField(
-    label: String,
-    address: String
+    address: CryptoAddress,
+    updateCheck: (AddressType) -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
 
-    OutlinedTextField(
-        value = address,
-        singleLine = true,
-        enabled = false,
-        textStyle = TextStyle.Default.copy(fontSize = 14.sp),
-        label = { Text(text = label) }, onValueChange = {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = address.address,
+            singleLine = true,
+            enabled = false,
+            textStyle = TextStyle.Default.copy(fontSize = 14.sp),
+            label = {
+                Text(text = stringResource(id = address.type.label))
+            },
+            onValueChange = {
 
-        },
-        trailingIcon = {
-            Image(
-                imageVector = Icons.Default.ContentCopy,
-                contentDescription = "Copy",
-                colorFilter = ColorFilter.tint(color = MaterialTheme.colorScheme.onBackground),
-                modifier = Modifier.clickable {
-                    clipboardManager.setText(AnnotatedString(address))
-                }
+            },
+            trailingIcon = {
+                Image(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy",
+                    colorFilter = ColorFilter.tint(color = MaterialTheme.colorScheme.onBackground),
+                    modifier = Modifier.clickable {
+                        clipboardManager.setText(AnnotatedString(address.address))
+                    }
+                )
+            },
+            modifier = Modifier.weight(1f)
+        )
+        if (address.type != AddressType.PrivateKey) {
+            Switch(
+                checked = address.isEnabled,
+                onCheckedChange = {
+                    updateCheck(address.type)
+                },
+                modifier = Modifier.padding(start = 16.dp)
             )
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
+        }
+
+    }
 }

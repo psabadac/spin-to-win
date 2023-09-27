@@ -21,20 +21,21 @@ import java.math.BigInteger
 class GameViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(
         GameUiState(
-            "",
-            "",
-            "",
-            false,
-            BigInteger.ONE)
+            CryptoAddress("", AddressType.Bip44, true),
+            CryptoAddress("", AddressType.Bip84, true),
+            CryptoAddress("", AddressType.Eth, true),
+            isSpinning = false,
+            index = BigInteger.ONE
+        )
     )
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
     private val networkParameters = NetworkParameters.fromID(NetworkParameters.ID_MAINNET)
 
     init {
         val two = BigInteger.valueOf(2)
-        val bip44BtcAddress = privateKeyToLegacyBip44BtcAddress(two)
-        val bip84BtcAddress = privateKeyToNativeSegWitBip84BtcAddress(two)
-        val ethAddress = privateKeyToEthAddress(two)
+        val bip44BtcAddress = CryptoAddress(privateKeyToLegacyBip44BtcAddress(two), AddressType.Bip44, true)
+        val bip84BtcAddress = CryptoAddress(privateKeyToNativeSegWitBip84BtcAddress(two), AddressType.Bip84, true)
+        val ethAddress = CryptoAddress(privateKeyToEthAddress(two), AddressType.Eth, true)
 
         _uiState.update {
             currentState ->
@@ -64,6 +65,24 @@ class GameViewModel : ViewModel() {
             currentState.copy(isSpinning = false)
         }
     }
+
+    fun updateCheck(addressType: AddressType) {
+        _uiState.update { currentState ->
+            when(addressType) {
+                AddressType.PrivateKey -> currentState
+                AddressType.Bip44 -> currentState.copy(bip44BtcAddress = uiState.value.bip44BtcAddress.copy(isEnabled = !uiState.value.bip44BtcAddress.isEnabled))
+                AddressType.Bip84 -> currentState.copy(bip84BtcAddress = uiState.value.bip84BtcAddress.copy(isEnabled = !uiState.value.bip84BtcAddress.isEnabled))
+                AddressType.Eth -> currentState.copy(ethAddress = uiState.value.ethAddress.copy(isEnabled = !uiState.value.ethAddress.isEnabled))
+            }
+        }
+
+        if (!uiState.value.bip44BtcAddress.isEnabled
+            && !uiState.value.bip84BtcAddress.isEnabled
+            && !uiState.value.ethAddress.isEnabled) {
+            stop()
+        }
+    }
+
     fun privateKeyToLegacyBip44BtcAddress(privateKey: BigInteger): String =
         Address.fromKey(
             networkParameters,
@@ -86,16 +105,23 @@ class GameViewModel : ViewModel() {
 
         while (uiState.value.isSpinning) {
             val privateKey = i
-            emit(CryptoAddress(i.toString(), AddressType.PrivateKey))
+            emit(CryptoAddress(i.toString(), AddressType.PrivateKey, true))
 
-            val bip44BtcAddress = privateKeyToLegacyBip44BtcAddress(privateKey)
-            emit(CryptoAddress(bip44BtcAddress, AddressType.Bip44))
+            if (uiState.value.bip44BtcAddress.isEnabled) {
+                val bip44BtcAddress = privateKeyToLegacyBip44BtcAddress(privateKey)
+                emit(uiState.value.bip44BtcAddress.copy(address = bip44BtcAddress))
+            }
 
-            val bip84BtcAddress = privateKeyToNativeSegWitBip84BtcAddress(privateKey)
-            emit(CryptoAddress(bip84BtcAddress, AddressType.Bip84))
+            if (uiState.value.bip84BtcAddress.isEnabled) {
+                val bip84BtcAddress = privateKeyToNativeSegWitBip84BtcAddress(privateKey)
+                emit(uiState.value.bip84BtcAddress.copy(address = bip84BtcAddress))
+            }
 
-            val ethAddress = privateKeyToEthAddress(privateKey)
-            emit(CryptoAddress(ethAddress, AddressType.Eth))
+            if (uiState.value.ethAddress.isEnabled) {
+                val ethAddress = privateKeyToEthAddress(privateKey)
+                emit(uiState.value.ethAddress.copy(address = ethAddress))
+            }
+
             i = i.plus(BigInteger.ONE)
         }
 
@@ -106,9 +132,9 @@ class GameViewModel : ViewModel() {
         _uiState.update { currentState ->
             when (cryptoAddress.type) {
                 AddressType.PrivateKey -> currentState.copy(index = BigInteger(cryptoAddress.address))
-                AddressType.Bip44 -> currentState.copy(bip44BtcAddress = cryptoAddress.address)
-                AddressType.Bip84 -> currentState.copy(bip84BtcAddress = cryptoAddress.address)
-                AddressType.Eth  -> currentState.copy(ethAddress = cryptoAddress.address)
+                AddressType.Bip44 -> currentState.copy(bip44BtcAddress = cryptoAddress)
+                AddressType.Bip84 -> currentState.copy(bip84BtcAddress = cryptoAddress)
+                AddressType.Eth  -> currentState.copy(ethAddress = cryptoAddress)
             }
         }
     }
