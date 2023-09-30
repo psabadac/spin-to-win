@@ -72,11 +72,15 @@ class GameViewModel : ViewModel() {
     fun updateCheck(addressType: AddressType) {
         _uiState.update { currentState ->
             when (addressType) {
-                AddressType.PrivateKey -> currentState.copy(
-                    privateKey = uiState.value.privateKey.copy(
-                        isEnabled = !uiState.value.privateKey.isEnabled
+                AddressType.PrivateKey -> {
+                    val radix = if (uiState.value.privateKey.isEnabled) 10 else 16
+                    currentState.copy(
+                        privateKey = uiState.value.privateKey.copy(
+                            isEnabled = !uiState.value.privateKey.isEnabled,
+                            address = index.toString(radix)
+                        )
                     )
-                )
+                }
 
                 AddressType.Bip44 -> currentState.copy(
                     bip44BtcAddress = uiState.value.bip44BtcAddress.copy(
