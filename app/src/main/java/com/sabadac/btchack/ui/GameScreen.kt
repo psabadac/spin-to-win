@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -46,12 +45,11 @@ fun GameScreen(
             .wrapContentSize(),
     ) {
         AddressField(
-            address = CryptoAddress(
-                gameUiState.index.toString(16),
-                AddressType.PrivateKey,
-                true
-            )
-        ) {}
+            address = gameUiState.privateKey,
+        ) {
+            gameViewModel.updateCheck(it)
+        }
+
         AddressField(
             address = gameUiState.bip44BtcAddress,
         ) {
@@ -70,19 +68,21 @@ fun GameScreen(
             gameViewModel.updateCheck(it)
         }
 
-        Button(onClick = {
-            if (gameUiState.isSpinning) {
-                gameViewModel.stop()
-            } else {
-                gameViewModel.start()
-            }
-        }, modifier = Modifier.padding(16.dp)) {
-            Text(text = stringResource(if (gameUiState.isSpinning) R.string.pause else R.string.continue_spin))
+        Button(
+            onClick = {
+                if (gameUiState.isSpinning) {
+                    gameViewModel.pause()
+                } else {
+                    gameViewModel.resume()
+                }
+            }, modifier = Modifier.padding(16.dp),
+            enabled = gameUiState.ethAddress.isEnabled || gameUiState.bip44BtcAddress.isEnabled || gameUiState.bip84BtcAddress.isEnabled
+        ) {
+            Text(text = stringResource(if (gameUiState.isSpinning) R.string.pause else R.string.resume))
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddressField(
     address: CryptoAddress,
@@ -97,7 +97,10 @@ fun AddressField(
             enabled = false,
             textStyle = TextStyle.Default.copy(fontSize = 14.sp),
             label = {
-                Text(text = stringResource(id = address.type.label))
+                Text(
+                    text = stringResource(id = address.type.label)
+                            + if (address.type == AddressType.PrivateKey) " " + stringResource(id = if (address.isEnabled) R.string.hex else R.string.dec) else ""
+                )
             },
             onValueChange = {
 
@@ -114,15 +117,13 @@ fun AddressField(
             },
             modifier = Modifier.weight(1f)
         )
-        if (address.type != AddressType.PrivateKey) {
-            Switch(
-                checked = address.isEnabled,
-                onCheckedChange = {
-                    updateCheck(address.type)
-                },
-                modifier = Modifier.padding(start = 16.dp)
-            )
-        }
 
+        Switch(
+            checked = address.isEnabled,
+            onCheckedChange = {
+                updateCheck(address.type)
+            },
+            modifier = Modifier.padding(start = 16.dp)
+        )
     }
 }

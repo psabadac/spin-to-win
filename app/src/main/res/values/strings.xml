@@ -1,9 +1,11 @@
 <resources>
     <string name="app_name">Spin To Win</string>
-    <string name="private_key_hex">Private Key Hex</string>
+    <string name="private_key">Private Key</string>
+    <string name="hex">Hex</string>
+    <string name="dec">Decimal</string>
     <string name="bip44">Bip44</string>
     <string name="bip84">Bip84</string>
     <string name="eth">ETH/BNB</string>
     <string name="pause">pause</string>
-    <string name="continue_spin">continue</string>
+    <string name="resume">resume</string>
 </resources>
