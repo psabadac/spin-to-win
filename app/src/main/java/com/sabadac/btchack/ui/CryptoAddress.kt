@@ -4,10 +4,12 @@ import androidx.annotation.StringRes
 import com.sabadac.btchack.R
 
 enum class AddressType(@StringRes val label: Int) {
+    Passphrase(R.string.passphrase),
+    PrivateKey(R.string.private_key_hex),
     Bip44(R.string.bip44),
     Bip84(R.string.bip84),
     Eth(R.string.eth),
-    PrivateKey(R.string.private_key),
+
 }
 data class CryptoAddress(
     val address: String,

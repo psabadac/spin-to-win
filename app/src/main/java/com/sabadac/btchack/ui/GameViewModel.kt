@@ -17,20 +17,24 @@ import org.bitcoinj.script.Script
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
 import java.math.BigInteger
+import java.security.MessageDigest
 
 class GameViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(
         GameUiState(
-            CryptoAddress("", AddressType.Bip44, true),
-            CryptoAddress("", AddressType.Bip84, true),
-            CryptoAddress("", AddressType.Eth, true),
+            passphrase = CryptoAddress(address = "", AddressType.Passphrase, isEnabled = false),
+            privateKey = CryptoAddress("", AddressType.PrivateKey, true),
+            bip44BtcAddress = CryptoAddress("", AddressType.Bip44, true),
+            bip84BtcAddress = CryptoAddress("", AddressType.Bip84, true),
+            ethAddress = CryptoAddress("", AddressType.Eth, true),
             isSpinning = false,
-            privateKey = CryptoAddress("", AddressType.PrivateKey, true)
         )
     )
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
     private var index = BigInteger.valueOf(2)
     private val networkParameters = NetworkParameters.fromID(NetworkParameters.ID_MAINNET)
+    private val max = BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140", 16)
+    private val sha256 = MessageDigest.getInstance("SHA-256")
 
     init {
         val two = BigInteger.valueOf(2)
@@ -69,9 +73,38 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    fun updateChecksum(passphrase: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            updateAddresses(uiState.value.passphrase.copy(address = passphrase))
+            index = BigInteger(sha256.digest(passphrase.toByteArray()))
+            if (index < BigInteger.ZERO || index > max) return@launch
+
+            val privateKey = index
+
+            val radix = if (uiState.value.privateKey.isEnabled) 16 else 10
+            updateAddresses(uiState.value.privateKey.copy(address = index.toString(radix)))
+
+            if (uiState.value.bip44BtcAddress.isEnabled) {
+                val bip44BtcAddress = privateKeyToLegacyBip44BtcAddress(privateKey)
+                updateAddresses(uiState.value.bip44BtcAddress.copy(address = bip44BtcAddress))
+            }
+
+            if (uiState.value.bip84BtcAddress.isEnabled) {
+                val bip84BtcAddress = privateKeyToNativeSegWitBip84BtcAddress(privateKey)
+                updateAddresses(uiState.value.bip84BtcAddress.copy(address = bip84BtcAddress))
+            }
+
+            if (uiState.value.ethAddress.isEnabled) {
+                val ethAddress = privateKeyToEthAddress(privateKey)
+                updateAddresses(uiState.value.ethAddress.copy(address = ethAddress))
+            }
+        }
+    }
+
     fun updateCheck(addressType: AddressType) {
         _uiState.update { currentState ->
             when (addressType) {
+                AddressType.Passphrase -> currentState
                 AddressType.PrivateKey -> {
                     val radix = if (uiState.value.privateKey.isEnabled) 10 else 16
                     currentState.copy(
@@ -158,6 +191,7 @@ class GameViewModel : ViewModel() {
     private fun updateAddresses(cryptoAddress: CryptoAddress) {
         _uiState.update { currentState ->
             when (cryptoAddress.type) {
+                AddressType.Passphrase -> currentState.copy(passphrase = cryptoAddress)
                 AddressType.PrivateKey -> currentState.copy(privateKey = cryptoAddress)
                 AddressType.Bip44 -> currentState.copy(bip44BtcAddress = cryptoAddress)
                 AddressType.Bip84 -> currentState.copy(bip84BtcAddress = cryptoAddress)

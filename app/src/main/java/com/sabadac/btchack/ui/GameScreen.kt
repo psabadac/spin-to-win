@@ -44,6 +44,12 @@ fun GameScreen(
             .padding(16.dp)
             .wrapContentSize(),
     ) {
+        PassphraseField(
+            passphrase = gameUiState.passphrase,
+        ) {
+            gameViewModel.updateChecksum(it)
+        }
+
         AddressField(
             address = gameUiState.privateKey,
         ) {
@@ -98,8 +104,7 @@ fun AddressField(
             textStyle = TextStyle.Default.copy(fontSize = 14.sp),
             label = {
                 Text(
-                    text = stringResource(id = address.type.label)
-                            + if (address.type == AddressType.PrivateKey) " " + stringResource(id = if (address.isEnabled) R.string.hex else R.string.dec) else ""
+                    text = stringResource(id = if (address.type == AddressType.PrivateKey && !address.isEnabled) R.string.private_key_dec else address.type.label)
                 )
             },
             onValueChange = {
@@ -124,6 +129,42 @@ fun AddressField(
                 updateCheck(address.type)
             },
             modifier = Modifier.padding(start = 16.dp)
+        )
+    }
+}
+
+@Composable
+fun PassphraseField(
+    passphrase: CryptoAddress,
+    updateChecksums: (String) -> Unit
+) {
+    val clipboardManager = LocalClipboardManager.current
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = passphrase.address,
+            singleLine = true,
+            enabled = true,
+            textStyle = TextStyle.Default.copy(fontSize = 14.sp),
+            label = {
+                Text(
+                    text = stringResource(id = passphrase.type.label)
+                )
+            },
+            onValueChange = {
+                updateChecksums(it)
+            },
+            trailingIcon = {
+                Image(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy",
+                    colorFilter = ColorFilter.tint(color = MaterialTheme.colorScheme.onBackground),
+                    modifier = Modifier.clickable {
+                        clipboardManager.setText(AnnotatedString(passphrase.address))
+                    }
+                )
+            },
+            modifier = Modifier.weight(1f)
         )
     }
 }
